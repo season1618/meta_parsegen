@@ -1,3 +1,3 @@
-pub trait Parser {
-    fn parse(s: &str) -> (&str, Self);
+pub trait Parser: Sized {
+    fn parse(s: &str) -> Option<(&str, Self)>;
 }

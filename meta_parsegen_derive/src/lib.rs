@@ -21,9 +21,9 @@ pub fn parse_derive(tokens: TokenStream) -> TokenStream {
                 
                 quote! {
                     impl Parser for #name {
-                        fn parse(s: &str) -> (&str, #name) {
-                            #(let (s, #idents) = #types::parse(s);)*
-                            (s, #name { #(#idents),* })
+                        fn parse(s: &str) -> Option<(&str, #name)> {
+                            #(let (s, #idents) = #types::parse(s)?;)*
+                            Some((s, #name { #(#idents),* }))
                         }
                     }
                 }
@@ -36,9 +36,9 @@ pub fn parse_derive(tokens: TokenStream) -> TokenStream {
                 
                 quote! {
                     impl Parser for #name {
-                        fn parse(s: &str) -> (&str, #name) {
-                            #(let (s, #idents) = #types::parse(s);)*
-                            (s, #name ( #(#idents),* ))
+                        fn parse(s: &str) -> Option<(&str, #name)> {
+                            #(let (s, #idents) = #types::parse(s)?;)*
+                            Some((s, #name ( #(#idents),* )))
                         }
                     }
                 }
@@ -46,8 +46,8 @@ pub fn parse_derive(tokens: TokenStream) -> TokenStream {
             Unit => {
                 quote! {
                     impl Parser for #name {
-                        fn parse(s: &str) -> (&str, #name) {
-                            (s, #name)
+                        fn parse(s: &str) -> Option<(&str, #name)> {
+                            Some((s, #name))
                         }
                     }
                 }
