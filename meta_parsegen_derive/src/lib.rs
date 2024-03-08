@@ -1,6 +1,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use quote::quote;
 use syn::{self, DeriveInput, Data, Fields, Ident, Type};
 use Data::*;
@@ -23,6 +24,21 @@ pub fn parse_derive(tokens: TokenStream) -> TokenStream {
                         fn parse(s: &str) -> (&str, #name) {
                             #(let (s, #idents) = #types::parse(s);)*
                             (s, #name { #(#idents),* })
+                        }
+                    }
+                }
+            },
+            Unnamed(fields) => {
+                let (idents, types): (Vec<Ident>, Vec<Type>) = fields.unnamed
+                    .into_iter().enumerate()
+                    .map(|(i, field)| (Ident::new(&format!("ident{}", i), Span::call_site()), field.ty))
+                    .unzip();
+                
+                quote! {
+                    impl Parser for #name {
+                        fn parse(s: &str) -> (&str, #name) {
+                            #(let (s, #idents) = #types::parse(s);)*
+                            (s, #name ( #(#idents),* ))
                         }
                     }
                 }
