@@ -43,7 +43,15 @@ pub fn parse_derive(tokens: TokenStream) -> TokenStream {
                     }
                 }
             },
-            _ => panic!(),
+            Unit => {
+                quote! {
+                    impl Parser for #name {
+                        fn parse(s: &str) -> (&str, #name) {
+                            (s, #name)
+                        }
+                    }
+                }
+            },
         },
         _ => panic!(),
     };
