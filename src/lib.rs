@@ -104,4 +104,50 @@ mod tests {
         assert_eq!(AorB::parse("bbc"), Some(("bc", AorB::ItemB(B))));
         assert_eq!(AorB2::parse("abc"), Some(("c", AorB2(AorB::ItemA(A), AorB::ItemB(B)))));
     }
+
+    #[derive(Debug, PartialEq, Parser)]
+    enum Expr {
+        Add(Term, Plus, Box::<Expr>),
+        Sub(Term, Minus, Box::<Expr>),
+        Term(Term),
+    }
+
+    #[derive(Debug, PartialEq, Parser)]
+    enum Term {
+        Mul(Fact, Asterisk, Box::<Term>),
+        Div(Fact, Slash, Box::<Term>),
+        Fact(Fact),
+    }
+
+    #[derive(Debug, PartialEq, Parser)]
+    enum Fact {
+        Expr(OpenParen, Box::<Expr>, CloseParen),
+        Num(u32),
+    }
+
+    #[derive(Debug, PartialEq)]
+    #[parse_unit('+')]
+    struct Plus;
+    #[derive(Debug, PartialEq)]
+    #[parse_unit('-')]
+    struct Minus;
+    #[derive(Debug, PartialEq)]
+    #[parse_unit('*')]
+    struct Asterisk;
+    #[derive(Debug, PartialEq)]
+    #[parse_unit('/')]
+    struct Slash;
+    #[derive(Debug, PartialEq)]
+    #[parse_unit('(')]
+    struct OpenParen;
+    #[derive(Debug, PartialEq)]
+    #[parse_unit(')')]
+    struct CloseParen;
+
+    #[test]
+    fn test_expr() {
+        assert_eq!(Term::parse("1*2/3"), Some(("", Term::Mul(Fact::Num(1), Asterisk, Box::new(Term::Div(Fact::Num(2), Slash, Box::new(Term::Fact(Fact::Num(3)))))))));
+        assert_eq!(Expr::parse("1*2+3"), Some(("", Expr::Add(Term::Mul(Fact::Num(1), Asterisk, Box::new(Term::Fact(Fact::Num(2)))), Plus, Box::new(Expr::Term(Term::Fact(Fact::Num(3))))))));
+        assert_eq!(Expr::parse("(1+2)*3"), Some(("", Expr::Term(Term::Mul(Fact::Expr(OpenParen, Box::new(Expr::Add(Term::Fact(Fact::Num(1)), Plus, Box::new(Expr::Term(Term::Fact(Fact::Num(2)))))), CloseParen), Asterisk, Box::new(Term::Fact(Fact::Num(3))))))))
+    }
 }
