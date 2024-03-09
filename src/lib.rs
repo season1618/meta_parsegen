@@ -43,7 +43,7 @@ impl Parser for char {
 #[cfg(test)]
 mod tests {
     use super::Parser;
-    use meta_parsegen_derive::Parser;
+    use meta_parsegen_derive::{Parser, parse_unit};
 
     #[test]
     fn test_u32() {
@@ -84,32 +84,12 @@ mod tests {
     struct AA2 { a: A, a2: A }
 
     #[derive(Debug, PartialEq)]
+    #[parse_unit('a')]
     struct A;
 
     #[derive(Debug, PartialEq)]
+    #[parse_unit('b')]
     struct B;
-
-    impl Parser for A {
-        fn parse(s: &str) -> Option<(&str, Self)> {
-            let mut chs = s.chars();
-            if Some('a') == chs.next() {
-                Some((chs.as_str(), A))
-            } else {
-                None
-            }
-        }
-    }
-
-    impl Parser for B {
-        fn parse(s: &str) -> Option<(&str, Self)> {
-            let mut chs = s.chars();
-            if Some('b') == chs.next() {
-                Some((chs.as_str(), B))
-            } else {
-                None
-            }
-        }
-    }
 
     #[test]
     fn test() {

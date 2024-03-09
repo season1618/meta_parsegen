@@ -82,3 +82,24 @@ fn parse_sequence_derive(name: proc_macro2::TokenStream, fields: Fields) -> proc
         },
     }
 }
+
+#[proc_macro_attribute]
+pub fn parse_unit(attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let item: DeriveInput = syn::parse(item).unwrap();
+    let name = item.ident;
+    let term = proc_macro2::TokenStream::from(attr);
+    let gen = quote! {
+        struct #name;
+        impl Parser for #name {
+            fn parse(s: &str) -> Option<(&str, #name)> {
+                let mut chs = s.chars();
+                if Some(#term) == chs.next() {
+                    Some((chs.as_str(), #name))
+                } else {
+                    None
+                }
+            }
+        }
+    };
+    gen.into()
+}
