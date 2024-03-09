@@ -2,10 +2,71 @@ pub trait Parser: Sized {
     fn parse(s: &str) -> Option<(&str, Self)>;
 }
 
+impl<T: Parser> Parser for Box<T> {
+    fn parse(s: &str) -> Option<(&str, Self)> {
+        let (s, res) = T::parse(s)?;
+        Some((s, Box::new(res)))
+    }
+}
+
+impl Parser for u32 {
+    fn parse(s: &str) -> Option<(&str, Self)> {
+        let mut chs = s.chars();
+        let mut val = 0;
+        match chs.clone().peekable().peek() {
+            Some(c) if c.is_ascii_digit() => {},
+            _ => return None,
+        }
+        loop {
+            match chs.clone().peekable().peek() {
+                Some(c) if c.is_ascii_digit() => {
+                    chs.next();
+                    val = 10 * val + c.to_digit(10).unwrap();
+                },
+                _ => { break; },
+            }
+        }
+        Some((chs.as_str(), val))
+    }
+}
+
+impl Parser for char {
+    fn parse(s: &str) -> Option<(&str, Self)> {
+        let mut chs = s.chars();
+        match chs.next() {
+            Some(c) => Some((chs.as_str(), c)),
+            None => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Parser;
     use meta_parsegen_derive::Parser;
+
+    #[test]
+    fn test_u32() {
+        assert_eq!(u32::parse(""), None);
+        assert_eq!(u32::parse("0"), Some(("", 0)));
+        assert_eq!(u32::parse("1"), Some(("", 1)));
+        assert_eq!(u32::parse("12"), Some(("", 12)));
+        assert_eq!(u32::parse("123"), Some(("", 123)));
+        assert_eq!(u32::parse("123abc"), Some(("abc", 123)));
+    }
+
+    #[test]
+    fn test_char() {
+        assert_eq!(char::parse(""), None);
+        assert_eq!(char::parse("a"), Some(("", 'a')));
+        assert_eq!(char::parse("abc"), Some(("bc", 'a')));
+    }
+
+    #[test]
+    fn test_box() {
+        assert_eq!(Box::<u32>::parse("123abc"), Some(("abc", Box::new(123))));
+        assert_eq!(Box::<char>::parse("abc"), Some(("bc", Box::new('a'))));
+    }
 
     #[derive(Debug, PartialEq, Parser)]
     struct AorB2(AorB, AorB);
