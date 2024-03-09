@@ -1,13 +1,14 @@
 extern crate proc_macro;
 
-use proc_macro2::Span;
+use proc_macro::TokenStream;
+use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
 use syn::{self, DeriveInput, Data, Fields, Ident, Type};
 use Data::*;
 use Fields::*;
 
 #[proc_macro_derive(Parser)]
-pub fn parse_derive(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn parse_derive(tokens: TokenStream) -> TokenStream {
     let ast: DeriveInput = syn::parse(tokens).unwrap();
     let name = ast.ident;
     let gen = match ast.data {
@@ -23,7 +24,7 @@ pub fn parse_derive(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream 
             }
         },
         Enum(data) => {
-            let (methods, parse_vars): (Vec<Ident>, Vec<proc_macro2::TokenStream>) = data.variants
+            let (methods, parse_vars): (Vec<Ident>, Vec<TokenStream2>) = data.variants
                 .into_iter()
                 .map(|variant| {
                     let tag = variant.ident;
@@ -53,7 +54,7 @@ pub fn parse_derive(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream 
     gen.into()
 }
 
-fn parse_sequence_derive(name: proc_macro2::TokenStream, fields: Fields) -> proc_macro2::TokenStream {
+fn parse_sequence_derive(name: TokenStream2, fields: Fields) -> TokenStream2 {
     match fields {
         Named(fields) => {
             let (idents, types): (Vec<Ident>, Vec<Type>) = fields.named
@@ -69,7 +70,7 @@ fn parse_sequence_derive(name: proc_macro2::TokenStream, fields: Fields) -> proc
         Unnamed(fields) => {
             let (idents, types): (Vec<Ident>, Vec<Type>) = fields.unnamed
                 .into_iter().enumerate()
-                .map(|(i, field)| (Ident::new(&format!("ident{}", i), Span::call_site()), field.ty))
+                .map(|(i, field)| (format_ident!("ident{}", i), field.ty))
                 .unzip();
 
             quote! {
@@ -84,10 +85,10 @@ fn parse_sequence_derive(name: proc_macro2::TokenStream, fields: Fields) -> proc
 }
 
 #[proc_macro_attribute]
-pub fn parse_unit(attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn parse_unit(attr: TokenStream, item: TokenStream) -> TokenStream {
     let item: DeriveInput = syn::parse(item).unwrap();
     let name = item.ident;
-    let term = proc_macro2::TokenStream::from(attr);
+    let term = TokenStream2::from(attr);
     let gen = quote! {
         struct #name;
         impl Parser for #name {
