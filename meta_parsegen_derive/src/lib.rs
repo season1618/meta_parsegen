@@ -12,7 +12,7 @@ pub fn parse_derive(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream 
     let name = ast.ident;
     let gen = match ast.data {
         Struct(data) => {
-            let sequence = parse_sequence_derive(&name, data.fields);
+            let sequence = parse_sequence_derive(quote! { #name }, data.fields);
 
             quote! {
                 impl Parser for #name {
@@ -27,21 +27,9 @@ pub fn parse_derive(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream 
                 .into_iter()
                 .map(|variant| {
                     let tag = variant.ident;
-                    let fields = match variant.fields {
-                        Unnamed(fields) => fields,
-                        _ => panic!(),
-                    };
-                    let (idents, types): (Vec<Ident>, Vec<Type>) = fields.unnamed
-                        .into_iter().enumerate()
-                        .map(|(i, field)| (Ident::new(&format!("ident{}", i), Span::call_site()), field.ty))
-                        .unzip();
-
-                    let code = quote! {
-                        #(let (s, #idents) = #types::parse(s)?;)*
-                        Some((s, #name::#tag( #(#idents),* )))
-                    };
-
-                    (format_ident!("parse_{}", tag), code)
+                    let method = format_ident!("parse_{}", tag);
+                    let parse_variant = parse_sequence_derive(quote! { #name::#tag }, variant.fields);
+                    (method, parse_variant)
                 })
                 .unzip();
 
@@ -65,7 +53,7 @@ pub fn parse_derive(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream 
     gen.into()
 }
 
-fn parse_sequence_derive(name: &Ident, fields: Fields) -> proc_macro2::TokenStream {
+fn parse_sequence_derive(name: proc_macro2::TokenStream, fields: Fields) -> proc_macro2::TokenStream {
     match fields {
         Named(fields) => {
             let (idents, types): (Vec<Ident>, Vec<Type>) = fields.named
